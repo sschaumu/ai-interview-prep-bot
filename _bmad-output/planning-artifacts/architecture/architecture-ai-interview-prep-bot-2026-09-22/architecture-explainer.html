@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How the Interview Bot Works</title>
+<style>
+  :root {
+    --bg: #fbfaf7; --surface: #ffffff; --text: #1e2622; --muted: #55635c;
+    --line: #d9dfd9; --accent: #0f766e; --accent-soft: #e2f1ee; --warn: #9a5b00; --warn-soft: #fbf0dc;
+    --code-bg: #f1f3ef;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141a18; --surface: #1b2320; --text: #e7ede9; --muted: #a2b0a8;
+      --line: #2e3a35; --accent: #4fc3b6; --accent-soft: #17302c; --warn: #f0b25a; --warn-soft: #33290f;
+      --code-bg: #212b27;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 46rem; margin: 0 auto; padding: 2rem 1rem 4rem; }
+  h1 { font-size: 1.9rem; line-height: 1.2; margin: 0 0 .5rem; }
+  h2 { font-size: 1.3rem; margin: 2.5rem 0 .5rem; padding-top: 1rem; border-top: 1px solid var(--line); }
+  h3 { font-size: 1.05rem; margin: 1.5rem 0 .25rem; }
+  p, li { max-width: 42rem; }
+  .lede { color: var(--muted); font-size: 1.05rem; }
+  code { background: var(--code-bg); padding: .1rem .35rem; border-radius: 4px; font-size: .92em; }
+  pre { background: var(--code-bg); padding: .9rem 1rem; border-radius: 8px; overflow-x: auto; font-size: .88rem; line-height: 1.5; }
+  pre code { background: none; padding: 0; }
+  .note { background: var(--accent-soft); border-left: 4px solid var(--accent); padding: .7rem 1rem; border-radius: 4px; margin: 1rem 0; }
+  .warn { background: var(--warn-soft); border-left: 4px solid var(--warn); padding: .7rem 1rem; border-radius: 4px; margin: 1rem 0; }
+  figure { margin: 1.25rem 0; }
+  figure svg { width: 100%; height: auto; display: block; }
+  figcaption { color: var(--muted); font-size: .9rem; margin-top: .4rem; }
+  svg text { fill: var(--text); font: 13px system-ui, sans-serif; }
+  svg .box { fill: var(--surface); stroke: var(--line); stroke-width: 1.5; }
+  svg .hi { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.5; }
+  svg .ln { stroke: var(--muted); stroke-width: 1.5; fill: none; }
+  svg .dash { stroke: var(--muted); stroke-width: 1.5; fill: none; stroke-dasharray: 5 4; }
+  svg .lbl { fill: var(--muted); font-size: 12px; }
+  svg .tip { fill: var(--muted); }
+  table { border-collapse: collapse; width: 100%; font-size: .93rem; margin: 1rem 0; }
+  th, td { text-align: left; padding: .45rem .6rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  details { border: 1px solid var(--line); border-radius: 8px; padding: .5rem 1rem; margin: .6rem 0; background: var(--surface); }
+  summary { cursor: pointer; font-weight: 600; }
+  summary:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .demo { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 1rem; margin: 1rem 0; }
+  .demo label { display: block; font-weight: 600; margin-bottom: .25rem; }
+  .demo input[type=text] { width: 100%; font: inherit; padding: .5rem .6rem; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--text); }
+  .bar { height: .9rem; background: var(--accent); border-radius: 3px; min-width: 2px; transition: width .2s; }
+  @media (prefers-reduced-motion: reduce) { .bar { transition: none; } }
+  .row { display: grid; grid-template-columns: minmax(0,1fr) 4.5rem; gap: .6rem; align-items: center; margin: .5rem 0; }
+  .row .q { font-size: .92rem; }
+  .row .score { font-variant-numeric: tabular-nums; color: var(--muted); text-align: right; font-size: .9rem; }
+  .track { grid-column: 1 / -1; background: var(--code-bg); border-radius: 3px; }
+  .top { font-weight: 700; }
+  nav.toc { margin: 1.5rem 0; }
+  nav.toc ol { padding-left: 1.2rem; }
+</style>
+</head>
+<body>
+<main>
+
+<h1>How the Interview Bot Works</h1>
+<p class="lede">A guided tour of the architecture, written for you, Simon, so you can explain the RAG pipeline, the provider swap and the React-to-C# flow in your own words. It goes with <code>ARCHITECTURE-SPINE.md</code>, which is the rulebook the build agents follow. This page is the explanation behind it.</p>
+
+<nav class="toc" aria-label="Contents">
+  <strong>In this page</strong>
+  <ol>
+    <li><a href="#big-picture">The big picture</a></li>
+    <li><a href="#rag">RAG: how the bot finds Questions</a></li>
+    <li><a href="#swap">Swapping providers without touching code</a></li>
+    <li><a href="#turn">One interview turn, end to end</a></li>
+    <li><a href="#control">Why code runs the interview, not the model</a></li>
+    <li><a href="#privacy">Where your Resume lives</a></li>
+    <li><a href="#check">Explain-it-yourself checklist</a></li>
+  </ol>
+</nav>
+
+<h2 id="big-picture">1. The big picture</h2>
+<p>Three programs run on your machine. The browser shows a React app. A C# web API does the thinking about <em>what happens next</em>. Ollama runs the language model. The API never lets the browser talk to the model directly, and that keeps any API keys out of the browser.</p>
+
+<figure>
+<svg viewBox="0 0 640 210" role="img" aria-label="Browser talks to the C# API, which talks to SQLite and to Ollama or a hosted provider">
+  <rect class="box" x="10" y="70" width="130" height="70" rx="8"/>
+  <text x="75" y="100" text-anchor="middle">Browser</text>
+  <text class="lbl" x="75" y="120" text-anchor="middle">React app (Vite)</text>
+  <rect class="hi" x="230" y="55" width="170" height="100" rx="8"/>
+  <text x="315" y="88" text-anchor="middle">C# API (Kestrel)</text>
+  <text class="lbl" x="315" y="108" text-anchor="middle">interview rules,</text>
+  <text class="lbl" x="315" y="124" text-anchor="middle">RAG, coaching</text>
+  <rect class="box" x="500" y="15" width="130" height="60" rx="8"/>
+  <text x="565" y="42" text-anchor="middle">SQLite file</text>
+  <text class="lbl" x="565" y="60" text-anchor="middle">Question Bank</text>
+  <rect class="box" x="500" y="95" width="130" height="60" rx="8"/>
+  <text x="565" y="122" text-anchor="middle">Ollama</text>
+  <text class="lbl" x="565" y="140" text-anchor="middle">chat + embeddings</text>
+  <rect class="box" x="500" y="160" width="130" height="42" rx="8" style="stroke-dasharray:5 4"/>
+  <text x="565" y="185" text-anchor="middle">OpenAI / Azure (option)</text>
+  <line class="ln" x1="140" y1="105" x2="230" y2="105"/>
+  <line class="ln" x1="400" y1="80" x2="500" y2="50"/>
+  <line class="ln" x1="400" y1="105" x2="500" y2="122"/>
+  <line class="dash" x1="400" y1="130" x2="500" y2="178"/>
+  <text class="lbl" x="185" y="97" text-anchor="middle">/api</text>
+</svg>
+<figcaption>Solid lines are the default. The dashed line is what you switch on by changing configuration.</figcaption>
+</figure>
+
+<p>Inside the C# API the code is split into three projects, and the arrows only point one way:</p>
+<pre><code>Api  ──►  Infrastructure  ──►  Core
+ └──────────────────────────►  Core</code></pre>
+<p><strong>Core</strong> holds the rules (the interview state machine, the parser, the prompts) and the <em>ports</em>: interfaces that say "I need something that can chat" or "I need somewhere to store Questions". <strong>Infrastructure</strong> holds the <em>adapters</em> that plug real things into those ports: Ollama, OpenAI, SQLite, Word and PDF readers. <strong>Api</strong> is the thin HTTP layer that wires everything together. This pattern is called <em>hexagonal architecture</em> or <em>ports and adapters</em>.</p>
+<div class="note"><strong>Say it in one sentence:</strong> the interesting logic never knows which model or database it is using, so I can swap them by changing a setting.</div>
+
+<h2 id="rag">2. RAG: how the bot finds Questions</h2>
+<p>RAG means <em>retrieval-augmented generation</em>: before the model writes anything, you <strong>retrieve</strong> relevant text from your own data and put it in the prompt. Here the data is the Question Bank. The trick that makes retrieval work is the <strong>embedding</strong>.</p>
+
+<h3>An embedding is a location for meaning</h3>
+<p>An embedding model turns a piece of text into a list of numbers (768 of them for <code>nomic-embed-text</code>). Think of it as coordinates on a map of meaning. Texts about similar things land near each other, even when they share no words. "How do you cancel a running task in C#?" ends up close to "Explain CancellationToken" and far from "Describe Azure Key Vault".</p>
+
+<h3>Two phases</h3>
+<figure>
+<svg viewBox="0 0 640 230" role="img" aria-label="Ingestion phase: file to parse to embed to SQLite. Interview phase: Resume profile to embed to compare with stored vectors to top-k Questions">
+  <text x="10" y="20" style="font-weight:600">A. Ingestion (when you import or add)</text>
+  <rect class="box" x="10" y="32" width="110" height="46" rx="6"/><text x="65" y="60" text-anchor="middle">File / typed Q</text>
+  <rect class="box" x="150" y="32" width="120" height="46" rx="6"/><text x="210" y="52" text-anchor="middle">Parse Q1., Q2.</text><text class="lbl" x="210" y="68" text-anchor="middle">rules, no model</text>
+  <rect class="hi" x="300" y="32" width="150" height="46" rx="6"/><text x="375" y="52" text-anchor="middle">Embed the question</text><text class="lbl" x="375" y="68" text-anchor="middle">text only</text>
+  <rect class="box" x="480" y="32" width="150" height="46" rx="6"/><text x="555" y="52" text-anchor="middle">SQLite row</text><text class="lbl" x="555" y="68" text-anchor="middle">text, answer, vector</text>
+  <line class="ln" x1="120" y1="55" x2="150" y2="55"/><line class="ln" x1="270" y1="55" x2="300" y2="55"/><line class="ln" x1="450" y1="55" x2="480" y2="55"/>
+  <text x="10" y="128" style="font-weight:600">B. Retrieval (each Question Bank turn)</text>
+  <rect class="box" x="10" y="140" width="150" height="56" rx="6"/><text x="85" y="162" text-anchor="middle">Resume profile +</text><text x="85" y="178" text-anchor="middle">last exchange</text>
+  <rect class="hi" x="190" y="140" width="130" height="56" rx="6"/><text x="255" y="162" text-anchor="middle">Embed it</text><text class="lbl" x="255" y="178" text-anchor="middle">same model as A</text>
+  <rect class="box" x="350" y="140" width="130" height="56" rx="6"/><text x="415" y="162" text-anchor="middle">Compare with</text><text x="415" y="178" text-anchor="middle">every stored vector</text>
+  <rect class="box" x="510" y="140" width="120" height="56" rx="6"/><text x="570" y="162" text-anchor="middle">Best match</text><text class="lbl" x="570" y="178" text-anchor="middle">not yet asked</text>
+  <line class="ln" x1="160" y1="168" x2="190" y2="168"/><line class="ln" x1="320" y1="168" x2="350" y2="168"/><line class="ln" x1="480" y1="168" x2="510" y2="168"/>
+</svg>
+<figcaption>Both phases must use the same embedding model, or the coordinates mean different things.</figcaption>
+</figure>
+
+<h3>"Closest" means cosine similarity</h3>
+<p>To compare two vectors you measure the angle between them. Cosine similarity gives 1 for the same direction, 0 for unrelated and negative for opposite. Your bank has 87 Questions today, so the API simply scores <em>all</em> of them in memory and keeps the top few. No vector database is needed at this size, and writing that loop yourself is the best way to learn what a vector database does for you at scale.</p>
+
+<div class="demo" id="cos-demo">
+  <label for="cos-q">Toy version: type a question and see which of three stored Questions it is closest to.</label>
+  <input id="cos-q" type="text" value="How do I stop a long-running async method?" autocomplete="off">
+  <div id="cos-out" aria-live="polite"></div>
+  <p class="lbl" style="color:var(--muted);font-size:.85rem;margin:.6rem 0 0">This uses simple word overlap, not a real embedding model, so it only catches shared words. A real model also catches shared <em>meaning</em>, which is the whole point of embeddings.</p>
+</div>
+
+<h3>Choices that follow from this</h3>
+<table>
+  <tr><th>Rule</th><th>Why</th></tr>
+  <tr><td>Only the Question text is embedded, not the Reference Answer</td><td>Answers are long. Embedding and prompting with them would flood a small model. The answer is fetched only when coaching that Question.</td></tr>
+  <tr><td>Each row records the <em>embedding profile</em> (provider, model, dimensions, prompt scheme)</td><td>Vectors from different models cannot be compared. If you change the embedding model, the app notices the mismatch and re-embeds the bank.</td></tr>
+  <tr><td>The Question Bank owns one in-memory index snapshot that is replaced after every write</td><td>A deleted Question can never be served from a stale cache.</td></tr>
+  <tr><td>Import is rule-based: a line starting <code>Q12.</code> begins a Question</td><td>Your sample file follows that pattern, and small local models are unreliable at extraction.</td></tr>
+</table>
+<div class="note"><strong>Say it in one sentence:</strong> I turn each Question into a vector once, turn the interview context into a vector each turn, and pick the closest Question I have not asked yet.</div>
+
+<h2 id="swap">3. Swapping providers without touching code</h2>
+<p>Microsoft ships two small interfaces, <code>IChatClient</code> and <code>IEmbeddingGenerator</code>. Every provider library can produce one. Core only ever sees those interfaces, so it cannot tell whether Ollama or OpenAI is behind them.</p>
+<figure>
+<svg viewBox="0 0 640 170" role="img" aria-label="Core depends on IChatClient; the composition root picks an Ollama or OpenAI adapter from configuration">
+  <rect class="hi" x="10" y="55" width="170" height="60" rx="8"/><text x="95" y="82" text-anchor="middle">Core (interview,</text><text x="95" y="98" text-anchor="middle">coaching, retrieval)</text>
+  <rect class="box" x="230" y="55" width="150" height="60" rx="8"/><text x="305" y="82" text-anchor="middle">IChatClient</text><text class="lbl" x="305" y="98" text-anchor="middle">the port</text>
+  <rect class="box" x="450" y="15" width="180" height="50" rx="8"/><text x="540" y="36" text-anchor="middle">OllamaSharp adapter</text><text class="lbl" x="540" y="52" text-anchor="middle">default, free</text>
+  <rect class="box" x="450" y="105" width="180" height="50" rx="8" style="stroke-dasharray:5 4"/><text x="540" y="126" text-anchor="middle">OpenAI adapter</text><text class="lbl" x="540" y="142" text-anchor="middle">also Azure OpenAI</text>
+  <line class="ln" x1="180" y1="85" x2="230" y2="85"/>
+  <line class="ln" x1="380" y1="75" x2="450" y2="42"/>
+  <line class="dash" x1="380" y1="95" x2="450" y2="128"/>
+  <text class="lbl" x="415" y="170" text-anchor="middle">config picks which adapter is built at startup</text>
+</svg>
+</figure>
+<p>The choice is made in one place, the API's startup code, by reading configuration. Chat and embeddings are chosen separately, so you could chat with a paid model while embedding locally.</p>
+<pre><code>// appsettings.json (default, free)
+"Providers": {
+  "Chat":      { "Type": "ollama", "Model": "gemma3:4b" },
+  "Embedding": { "Type": "ollama", "Model": "nomic-embed-text" }
+}
+
+// switch chat to a paid model: change config, not code
+"Chat": { "Type": "openai", "Model": "gpt-...", "ApiKey": "(from user-secrets)" }</code></pre>
+<div class="warn"><strong>Two catches to remember.</strong> First, changing the <em>embedding</em> provider makes every stored vector incompatible, so the app re-embeds the bank at startup. Second, the API key lives in .NET user-secrets on the server and never reaches the browser.</div>
+<div class="note"><strong>Say it in one sentence:</strong> the code depends on an interface, and a setting decides which real model is plugged in behind it.</div>
+
+<h2 id="turn">4. One interview turn, end to end</h2>
+<ol>
+  <li>You type an answer in React and press Send. The app generates a <code>turnId</code> and POSTs it to <code>/api/interview/sessions/{id}/turns</code>.</li>
+  <li>The API saves your answer, then Core's state machine decides the next step: a follow-up, the next Resume question, or the next Question Bank question.</li>
+  <li>For a bank turn, Core embeds the interview context, scores the stored vectors and picks the best Question not yet asked.</li>
+  <li>Core builds a prompt (system instructions, your Resume, that one Question, the last few exchanges) and asks the model to phrase it.</li>
+  <li>The model's words stream back as small <code>token</code> events over <strong>server-sent events</strong>. React appends them to the chat bubble as they arrive.</li>
+  <li>When the stream finishes, the API saves the bot's reply and sends a <code>done</code> event telling React the question number, its source and whether the interview is over.</li>
+</ol>
+<details>
+  <summary>What if I press Stop, or the model fails halfway?</summary>
+  <p>Your answer is already saved and the bot's partial reply is not. Retry re-sends the <em>same</em> <code>turnId</code>, and the server replays the same decision instead of making a new one, so you never get a skipped or doubled question.</p>
+</details>
+<details>
+  <summary>Why server-sent events and not WebSockets?</summary>
+  <p>The text only flows one way, server to browser, and SSE is plain HTTP that ASP.NET Core 10 supports directly. Because the browser's <code>EventSource</code> can only send GET requests, the React app reads the stream with <code>fetch</code> instead.</p>
+</details>
+
+<h2 id="control">5. Why code runs the interview, not the model</h2>
+<p>A small local model is good at wording a question and poor at bookkeeping. So a C# <em>state machine</em> owns the things that must be exactly right: about 10 questions, at most one follow-up each, at least one Resume question and one bank question, and when to stop. The model only writes text, or fills in a fixed shape (structured output) that the code can read safely.</p>
+<p>The same idea applies to coaching. The report must be a typed object, and the code checks it: at least one strength, at least one weak spot, and every quote must really appear in your answer. If the model fails the check, the code asks again once, then reports an error instead of showing made-up feedback.</p>
+<div class="note"><strong>Say it in one sentence:</strong> the model writes the words and the code keeps the rules.</div>
+
+<h2 id="privacy">6. Where your Resume lives</h2>
+<table>
+  <tr><th>Data</th><th>Where</th><th>Removed when</th></tr>
+  <tr><td>Resume text and its extracted profile</td><td>Server memory only</td><td>The interview ends</td></tr>
+  <tr><td>Your answers and the report</td><td>Server memory only</td><td>You start a new session, or after 60 idle minutes</td></tr>
+  <tr><td>Questions and their vectors</td><td>One SQLite file in <code>data/</code></td><td>You delete them</td></tr>
+</table>
+<p>The API only listens on <code>localhost</code> and rejects requests from other websites, because there are no accounts. If you switch to a hosted provider, your Resume text is sent to that provider. That is your call, and it is documented, not blocked.</p>
+
+<h2 id="check">7. Explain-it-yourself checklist</h2>
+<p>These match the learning goal in the PRD (SM-2). Try answering out loud, then open the hint.</p>
+<details><summary>What is an embedding and why do similar Questions end up close together?</summary><p>A model maps text to a list of numbers so that similar meaning gives similar numbers. Closeness is measured with cosine similarity.</p></details>
+<details><summary>Walk through what happens between importing a file and the bot asking one of its Questions.</summary><p>Extract text, parse <code>Q&lt;n&gt;.</code> blocks, embed each Question's text, store row and vector, later embed the interview context, compare against all vectors, take the best unasked match, wrap it in a prompt.</p></details>
+<details><summary>Why can't I mix vectors from two different embedding models?</summary><p>Each model has its own coordinate system, so distances between them are meaningless. That is why each row stores an embedding profile and the bank is re-embedded on change.</p></details>
+<details><summary>How does one config change move the bot from Ollama to OpenAI?</summary><p>Core depends on <code>IChatClient</code>. At startup the composition root reads <code>Providers:Chat:Type</code> and builds the matching adapter.</p></details>
+<details><summary>How do a React component, its state and a backend call fit together?</summary><p>The component holds messages in state. Sending calls a function in <code>src/api</code>, which does a <code>fetch</code> to <code>/api/...</code>. Each streamed token updates state, and React re-renders the bubble.</p></details>
+<details><summary>Which modern C# features show up, and why?</summary><p>Records for DTOs and model output, nullable reference types, async streams (<code>IAsyncEnumerable</code>) for streaming, minimal APIs, dependency injection, and <code>CancellationToken</code> so Stop actually stops the model.</p></details>
+
+<p class="lbl" style="color:var(--muted);font-size:.85rem;margin-top:2.5rem">Companion to <code>ARCHITECTURE-SPINE.md</code> in the same folder. If they disagree, the spine wins.</p>
+
+</main>
+
+<script>
+(function () {
+  var stored = [
+    "Explain how CancellationToken works in C# async code",
+    "What is the difference between a record and a class in C#",
+    "How does Azure Key Vault store and rotate secrets"
+  ];
+  var stop = { the:1,a:1,an:1,in:1,of:1,to:1,do:1,i:1,is:1,how:1,what:1,and:1,or:1,between:1,does:1,method:1 };
+  function words(s) {
+    var out = {};
+    (s.toLowerCase().match(/[a-z]+/g) || []).forEach(function (w) { if (!stop[w]) out[w] = (out[w] || 0) + 1; });
+    return out;
+  }
+  function cosine(a, b) {
+    var dot = 0, na = 0, nb = 0, k;
+    for (k in a) { na += a[k] * a[k]; if (b[k]) dot += a[k] * b[k]; }
+    for (k in b) nb += b[k] * b[k];
+    return na && nb ? dot / Math.sqrt(na * nb) : 0;
+  }
+  var input = document.getElementById("cos-q"), out = document.getElementById("cos-out");
+  function render() {
+    var q = words(input.value);
+    var scores = stored.map(function (t) { return { t: t, s: cosine(q, words(t)) }; });
+    var best = Math.max.apply(null, scores.map(function (x) { return x.s; }));
+    out.innerHTML = "";
+    scores.forEach(function (x) {
+      var row = document.createElement("div");
+      row.className = "row";
+      var label = document.createElement("div");
+      label.className = "q" + (x.s === best && best > 0 ? " top" : "");
+      label.textContent = x.t + (x.s === best && best > 0 ? "  (closest)" : "");
+      var score = document.createElement("div");
+      score.className = "score";
+      score.textContent = x.s.toFixed(2);
+      var track = document.createElement("div");
+      track.className = "track";
+      var bar = document.createElement("div");
+      bar.className = "bar";
+      bar.style.width = Math.round(x.s * 100) + "%";
+      track.appendChild(bar);
+      row.appendChild(label); row.appendChild(score); row.appendChild(track);
+      out.appendChild(row);
+    });
+  }
+  input.addEventListener("input", render);
+  render();
+})();
+</script>
+</body>
+</html>
