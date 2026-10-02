@@ -1,0 +1,13 @@
+[workflow]
+
+persistent_facts = [
+  "Git convention: never commit to main. Each build runs on its own branch named exactly after the story key (e.g. 1-1-add-a-question-and-stand-up-the-solution), the <number>-<story-name> slug from sprint-status.yaml. For non-story work, derive a kebab-case slug from the spec title.",
+]
+
+activation_steps_append = [
+  "Before step 01: determine the story key from the invocation args (or the spec title if none). If the working tree is dirty, HALT and ask. Otherwise run `git checkout main && git pull --ff-only`, then `git checkout -b <story-key>`. If that branch already exists, check it out instead of recreating it. Do not proceed on main.",
+]
+
+on_complete = """
+After the local commit: run `git push -u origin HEAD`, then `gh pr create --base main --fill --title "<story-key>: <spec title>"` with a body summarizing the spec and linking the story. Report the PR URL. If the push or PR creation fails, report the error and stop; do not retry destructively or force-push.
+"""
