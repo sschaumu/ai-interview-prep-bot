@@ -1,0 +1,130 @@
+/* Design tokens from DESIGN.md. Declared once on :root; components only use var(--...).
+   Dark values are redefined twice: under the system preference (unless the user chose Light)
+   and under an explicit data-theme="dark", so a saved manual choice beats the system. */
+
+:root {
+  /* Color: light set */
+  --color-surface-base: #f7f7f5;
+  --color-surface-raised: #ffffff;
+  --color-surface-sunken: #eeeeea;
+  --color-ink-primary: #1f2328;
+  --color-ink-secondary: #4f5660;
+  --color-ink-disabled: #8b9199;
+  --color-border-hairline: #dad9d3;
+  --color-border-strong: #7f868f;
+  --color-accent: #2b6a66;
+  --color-on-accent: #ffffff;
+  --color-accent-subtle: #e1eeec;
+  --color-accent-ink: #1f4d4a;
+  --color-success: #2c6444;
+  --color-success-subtle: #e4f0e8;
+  --color-caution: #7a4f0c;
+  --color-caution-subtle: #f6ecd9;
+  --color-danger: #a03631;
+  --color-on-danger: #ffffff;
+  --color-danger-subtle: #f7e4e2;
+  --color-focus-ring: #2b6a66;
+  --color-scrim: #1f232866;
+
+  /* Typography: system font stack only */
+  --type-font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --type-display-font-size: 1.75rem;
+  --type-display-font-weight: 600;
+  --type-display-line-height: 1.25;
+  --type-title-font-size: 1.25rem;
+  --type-title-font-weight: 600;
+  --type-title-line-height: 1.35;
+  --type-body-font-size: 1rem;
+  --type-body-font-weight: 400;
+  --type-body-line-height: 1.6;
+  --type-body-sm-font-size: 0.875rem;
+  --type-body-sm-font-weight: 400;
+  --type-body-sm-line-height: 1.5;
+  --type-label-font-size: 0.875rem;
+  --type-label-font-weight: 500;
+  --type-label-line-height: 1.4;
+  --type-meta-font-size: 0.8125rem;
+  --type-meta-font-weight: 400;
+  --type-meta-line-height: 1.4;
+
+  /* Radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-full: 9999px;
+
+  /* Spacing (4px based) and named layout tokens.
+     Breakpoints bp-md (40rem) and bp-lg (64rem) are written literally in media queries. */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+  --space-gutter-mobile: 16px;
+  --space-gutter-wide: 24px;
+  --space-column-max: 44rem;
+  --space-header-height: 3.5rem;
+  --space-strip-height: 3rem;
+  --space-touch-target: 2.75rem;
+
+  /* Stacking */
+  --z-header: 10;
+  --z-dialog: 100;
+
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-surface-base: #141719;
+    --color-surface-raised: #1c2024;
+    --color-surface-sunken: #101315;
+    --color-ink-primary: #e7e9eb;
+    --color-ink-secondary: #a2a9b1;
+    --color-ink-disabled: #5b626a;
+    --color-border-hairline: #2c3237;
+    --color-border-strong: #737b84;
+    --color-accent: #86c5be;
+    --color-on-accent: #0e1a19;
+    --color-accent-subtle: #1f3331;
+    --color-accent-ink: #b5e0db;
+    --color-success: #8fcfa8;
+    --color-success-subtle: #1b2c22;
+    --color-caution: #e2b872;
+    --color-caution-subtle: #2e2513;
+    --color-danger: #f0908a;
+    --color-on-danger: #2a0f0e;
+    --color-danger-subtle: #3a1f1e;
+    --color-focus-ring: #86c5be;
+    --color-scrim: #000000a6;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --color-surface-base: #141719;
+  --color-surface-raised: #1c2024;
+  --color-surface-sunken: #101315;
+  --color-ink-primary: #e7e9eb;
+  --color-ink-secondary: #a2a9b1;
+  --color-ink-disabled: #5b626a;
+  --color-border-hairline: #2c3237;
+  --color-border-strong: #737b84;
+  --color-accent: #86c5be;
+  --color-on-accent: #0e1a19;
+  --color-accent-subtle: #1f3331;
+  --color-accent-ink: #b5e0db;
+  --color-success: #8fcfa8;
+  --color-success-subtle: #1b2c22;
+  --color-caution: #e2b872;
+  --color-caution-subtle: #2e2513;
+  --color-danger: #f0908a;
+  --color-on-danger: #2a0f0e;
+  --color-danger-subtle: #3a1f1e;
+  --color-focus-ring: #86c5be;
+  --color-scrim: #000000a6;
+  color-scheme: dark;
+}

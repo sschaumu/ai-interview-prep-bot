@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/InterviewPrepBot.Api/InterviewPrepBot.Api.csproj" />
+    <Project Path="src/InterviewPrepBot.Core/InterviewPrepBot.Core.csproj" />
+    <Project Path="src/InterviewPrepBot.Infrastructure/InterviewPrepBot.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/InterviewPrepBot.Api.Tests/InterviewPrepBot.Api.Tests.csproj" />
+    <Project Path="tests/InterviewPrepBot.Core.Tests/InterviewPrepBot.Core.Tests.csproj" />
+    <Project Path="tests/InterviewPrepBot.Infrastructure.Tests/InterviewPrepBot.Infrastructure.Tests.csproj" />
+  </Folder>
+</Solution>
