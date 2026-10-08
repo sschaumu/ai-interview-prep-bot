@@ -1,0 +1,32 @@
+# Local SQLite database
+data/
+
+# .NET
+bin/
+obj/
+*.user
+design-time.db*
+
+# Node
+node_modules/
+dist/
+
+# Test output
+TestResults/
+coverage/
+
+# SQLite
+*.db
+*.db-shm
+*.db-wal
+
+# Secrets / local config
+.env
+.env.*
+appsettings.*.local.json
+
+# IDE / tooling
+.vs/
+.idea/
+*.suo
+.claude/settings.local.json

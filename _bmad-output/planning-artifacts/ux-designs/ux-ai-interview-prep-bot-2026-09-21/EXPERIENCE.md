@@ -58,6 +58,8 @@ Calm, plain, honest, short sentences. The bot uses first person inside chat; int
 | Report | "Preparing your Coaching Report..." / "I couldn't create your Coaching Report. Your answers are still here. Try again." |
 | Import | "42 Questions added." / "2 parts could not be read:" |
 | Delete | "Delete this Question? It won't be asked again." |
+| Duplicate Question | "That Question is already in the Question Bank." |
+| Add failed (not Provider) | "I couldn't add that Question. Try again." |
 
 Not this: "Oops! Something went wrong!", "Invalid file.", "Great job!", "Score: 7/10".
 
